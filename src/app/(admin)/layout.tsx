@@ -6,7 +6,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
-    <main className="min-h-screen bg-[#f4f4f0] p-1 text-black mx-auto max-w-screen-2xl p-4">
+    <main className="min-h-screen bg-[#f4f4f0] p-1 text-black">
       <div className="flex justify-between items-center">
         <AdminNavbar />
       </div>
