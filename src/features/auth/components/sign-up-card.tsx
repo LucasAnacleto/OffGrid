@@ -21,22 +21,16 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { registerSchema } from "../schema"
+import { useRegister } from "../api/use-register"
 
-const formSchema = z.object({
-  name: z.string().trim().min(1, "Informe seu nome."),
-  email: z
-    .string()
-    .trim()
-    .min(1, "Informe um e-mail valido.")
-    .email("Informe um e-mail valido."),
-  password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
-})
-
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof registerSchema>
 
 export const SignUpCard = () => {
+  const { mutate } = useRegister();
+
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -45,7 +39,7 @@ export const SignUpCard = () => {
   })
 
   const onSubmit = (values: FormValues) => {
-    console.log(values)
+    mutate({ json: values })
   }
 
   const nameError = form.formState.errors.name?.message

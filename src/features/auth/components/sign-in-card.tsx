@@ -10,16 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
-const signInSchema = z.object({
-  email: z.string().email("Informe um e-mail valido."),
-  password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
-});
+import { loginSchema } from "../schema";
+import { useLogin } from "../api/use-login";
 
-type SignInValues = z.infer<typeof signInSchema>;
+type SignInValues = z.infer<typeof loginSchema>;
 
 export const SignInCard = () => {
+  const { mutate } = useLogin();
+
   const form = useForm<SignInValues>({
-    resolver: zodResolver(signInSchema),
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -27,7 +27,7 @@ export const SignInCard = () => {
   });
 
   const onSubmit = (values: SignInValues) => {
-    console.log(values);
+    mutate({ json: values });
   };
 
   const emailError = form.formState.errors.email?.message;
