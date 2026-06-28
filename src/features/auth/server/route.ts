@@ -1,7 +1,10 @@
-import { z } from "zod";
+import { hash } from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 
+import { db } from "../../../../db/drizzle";
+import { users } from "../../../../db/schema";
 import { loginSchema, registerSchema } from "../schema";
 
 const app = new Hono()
@@ -21,10 +24,35 @@ const app = new Hono()
     zValidator("json", registerSchema),
     async (c) => {
       const { name, email, password } = c.req.valid("json");
+      const normalizedEmail = email.toLowerCase();
 
-      console.log({ name, email, password })
+      const [existingUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
 
-      return c.json({ name, email, password });
+      if (existingUser) {
+        return c.json({ error: "E-mail ja cadastrado." }, 409);
+      }
+
+      const passwordHash = await hash(password, 12);
+
+      const [user] = await db
+        .insert(users)
+        .values({
+          name,
+          email: normalizedEmail,
+          passwordHash,
+        })
+        .returning({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          createdAt: users.createdAt,
+        });
+
+      return c.json({ user }, 201);
     }
   )
 
