@@ -1,7 +1,7 @@
 import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { setCookie } from "hono/cookie";
+import { deleteCookie, setCookie } from "hono/cookie";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "../../../../db/drizzle";
@@ -64,6 +64,14 @@ const app = new Hono()
       });
     }
   )
+  .post("/logout", async (c) => {
+    deleteCookie(c, SESSION_COOKIE_NAME, {
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    return c.json({ success: true });
+  })
   .post(
     "/register",
     zValidator("json", registerSchema),

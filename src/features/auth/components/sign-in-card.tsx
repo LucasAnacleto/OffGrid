@@ -33,7 +33,8 @@ export const SignInCard = () => {
       { json: values },
       {
         onSuccess: () => {
-          router.push("/admin");
+          router.replace("/admin");
+          router.refresh();
         },
       }
     );
