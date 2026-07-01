@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, LockKeyhole, Mail, Skull, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { FaGithub } from "react-icons/fa";
 import { z } from "zod";
@@ -16,7 +17,8 @@ import { useLogin } from "../api/use-login";
 type SignInValues = z.infer<typeof loginSchema>;
 
 export const SignInCard = () => {
-  const { mutate } = useLogin();
+  const router = useRouter();
+  const { mutate, isPending, error } = useLogin();
 
   const form = useForm<SignInValues>({
     resolver: zodResolver(loginSchema),
@@ -27,7 +29,14 @@ export const SignInCard = () => {
   });
 
   const onSubmit = (values: SignInValues) => {
-    mutate({ json: values });
+    mutate(
+      { json: values },
+      {
+        onSuccess: () => {
+          router.push("/admin");
+        },
+      }
+    );
   };
 
   const emailError = form.formState.errors.email?.message;
@@ -118,11 +127,18 @@ export const SignInCard = () => {
 
         <Button
           type="submit"
+          disabled={isPending}
           className="h-14 w-full rounded-none border-2 border-black bg-pink-500 text-2xl font-black uppercase text-black shadow-[5px_5px_0_0_#000] hover:bg-pink-500 hover:text-black"
         >
-          Entrar
+          {isPending ? "Entrando" : "Entrar"}
           <ArrowRight className="size-7" />
         </Button>
+
+        {error ? (
+          <p className="text-center text-sm font-black uppercase text-pink-500">
+            {error.message}
+          </p>
+        ) : null}
 
         <div className="flex items-center">
           <div className="h-px flex-1 bg-black" />

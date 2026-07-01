@@ -1,11 +1,17 @@
-import { hash } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { setCookie } from "hono/cookie";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "../../../../db/drizzle";
 import { users } from "../../../../db/schema";
 import { loginSchema, registerSchema } from "../schema";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE,
+  signSessionToken,
+} from "./session";
 
 const app = new Hono()
   .post(
@@ -13,10 +19,49 @@ const app = new Hono()
     zValidator("json", loginSchema),
     async (c) => {
       const { email, password } = c.req.valid("json");
+      const normalizedEmail = email.toLowerCase();
 
-      console.log({ email, password })
+      const [user] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          passwordHash: users.passwordHash,
+        })
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
 
-      return c.json({ email, password });
+      if (!user) {
+        return c.json({ error: "Credenciais invalidas." }, 401);
+      }
+
+      const isValidPassword = await compare(password, user.passwordHash);
+
+      if (!isValidPassword) {
+        return c.json({ error: "Credenciais invalidas." }, 401);
+      }
+
+      const token = await signSessionToken({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      });
+
+      setCookie(c, SESSION_COOKIE_NAME, token, {
+        httpOnly: true,
+        maxAge: SESSION_MAX_AGE,
+        path: "/",
+        sameSite: "Lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+
+      return c.json({
+        user: {
+          name: user.name,
+          email: user.email,
+        },
+      });
     }
   )
   .post(
